@@ -37,7 +37,7 @@ def _spectrogram_plot(waveform: np.ndarray, sample_rate: int, title: str, n_fft:
 
     stft = np.abs(librosa.stft(waveform, n_fft=n_fft, hop_length=hop_length))
     spec_db = librosa.amplitude_to_db(stft, ref=np.max)
-    librosa.display.specshow(
+    spec_img = librosa.display.specshow(
         spec_db,
         sr=sample_rate,
         hop_length=hop_length,
@@ -47,7 +47,7 @@ def _spectrogram_plot(waveform: np.ndarray, sample_rate: int, title: str, n_fft:
         cmap="magma",
     )
     ax.set_title(title)
-    fig.colorbar(ax.images[0], ax=ax, format="%+2.0f dB")
+    fig.colorbar(spec_img, ax=ax, format="%+2.0f dB")
     fig.tight_layout()
     return fig
 

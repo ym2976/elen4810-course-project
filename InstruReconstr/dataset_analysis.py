@@ -38,6 +38,8 @@ class FileAnalysis:
     metrics: evaluation.ReconstructionMetrics
     partial_vector: np.ndarray
     partials_hz_amp: List[Tuple[float, float]]
+    instrument: str | None = None
+    pitch: str | None = None
 
 
 def partials_to_vector(partials: Sequence[Tuple[float, float]], n_partials: int) -> np.ndarray:
@@ -111,6 +113,7 @@ def analyze_dataset(
     limit: Optional[int] = None,
     save_reconstructions: bool = False,
     output_dir: Path | None = None,
+    detail_resolver: Callable[[Path, Mapping[str, str] | None], Tuple[str | None, str | None]] | None = None,
 ) -> List[FileAnalysis]:
     """
     Reconstructs every WAV/FLAC/OGG/MP3 file under `dataset_path` and collects metrics.
@@ -137,6 +140,13 @@ def analyze_dataset(
         label = label_resolver(audio_path, metadata)
         partial_vector = partials_to_vector(model.partials_hz_amp, n_partials=n_partials)
 
+        instrument = None
+        pitch = None
+        if detail_resolver:
+            instrument, pitch = detail_resolver(audio_path, metadata)
+        if instrument is None:
+            instrument = label
+
         if save_reconstructions and output_dir:
             recon_path = output_dir / f"{audio_path.stem}_reconstructed.wav"
             sf.write(recon_path, model.reconstruction, sr)
@@ -148,6 +158,8 @@ def analyze_dataset(
                 metrics=metrics,
                 partial_vector=partial_vector,
                 partials_hz_amp=model.partials_hz_amp,
+                instrument=instrument,
+                pitch=pitch,
             )
         )
 
@@ -174,6 +186,39 @@ def summarize_by_label(results: Iterable[FileAnalysis]) -> Dict[str, Dict[str, T
     return summary
 
 
+def summarize_by_instrument(results: Iterable[FileAnalysis]) -> Dict[str, Dict[str, Tuple[float, float]]]:
+    """
+    Computes mean and std for each metric grouped by instrument (falls back to label).
+    """
+
+    buckets: Dict[str, Dict[str, List[float]]] = {}
+    for item in results:
+        label = item.instrument or item.label
+        metrics_dict = item.metrics.__dict__
+        label_bucket = buckets.setdefault(label, {})
+        for name, value in metrics_dict.items():
+            label_bucket.setdefault(name, []).append(float(value))
+
+    summary: Dict[str, Dict[str, Tuple[float, float]]] = {}
+    for label, metrics_map in buckets.items():
+        summary[label] = {
+            metric: (float(np.mean(values)), float(np.std(values))) for metric, values in metrics_map.items()
+        }
+    return summary
+
+
+def summarize_overall(results: Iterable[FileAnalysis]) -> Dict[str, Tuple[float, float]]:
+    """
+    Computes overall mean/std for each metric across all files.
+    """
+
+    accum: Dict[str, List[float]] = {}
+    for item in results:
+        for name, value in item.metrics.__dict__.items():
+            accum.setdefault(name, []).append(float(value))
+    return {metric: (float(np.mean(values)), float(np.std(values))) for metric, values in accum.items()}
+
+
 def format_summary(summary: Mapping[str, Mapping[str, Tuple[float, float]]]) -> str:
     """
     Renders a human-readable summary table (mean ± std per label).
@@ -184,6 +229,13 @@ def format_summary(summary: Mapping[str, Mapping[str, Tuple[float, float]]]) -> 
         lines.append(f"[{label}]")
         for metric, (mean, std) in summary[label].items():
             lines.append(f"  {metric}: {mean:.4f} ± {std:.4f}")
+    return "\n".join(lines)
+
+
+def format_overall(summary: Mapping[str, Tuple[float, float]], title: str = "Overall") -> str:
+    lines: List[str] = [f"[{title}]"]
+    for metric, (mean, std) in summary.items():
+        lines.append(f"  {metric}: {mean:.4f} ± {std:.4f}")
     return "\n".join(lines)
 
 
@@ -206,16 +258,24 @@ def label_partial_means(results: Iterable[FileAnalysis], n_partials: int) -> Dic
     return {label: np.vstack(vectors).mean(axis=0) for label, vectors in accum.items() if vectors}
 
 
-def save_summary_to_json(summary: Mapping[str, Mapping[str, Tuple[float, float]]], path: Path):
+def save_summary_to_json(
+    summary: Mapping[str, Mapping[str, Tuple[float, float]]],
+    path: Path,
+    overall: Mapping[str, Tuple[float, float]] | None = None,
+):
     """
     Persists summary metrics to JSON.
     """
 
     payload: MutableMapping[str, MutableMapping[str, Dict[str, float]]] = {}
+    if overall:
+        payload["overall"] = {metric: {"mean": float(m), "std": float(s)} for metric, (m, s) in overall.items()}
+
+    payload["by_label"] = {}
     for label, metrics_map in summary.items():
-        payload[label] = {}
+        payload["by_label"][label] = {}
         for metric, (mean, std) in metrics_map.items():
-            payload[label][metric] = {"mean": float(mean), "std": float(std)}
+            payload["by_label"][label][metric] = {"mean": float(mean), "std": float(std)}
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
@@ -262,17 +322,27 @@ def run_cli(args: Optional[Sequence[str]] = None):
     dataset_path = Path(parsed.dataset)
     output_dir = Path(parsed.output_dir) if parsed.output_dir else None
 
-    metadata = load_nsynth_metadata(dataset_path)
-    if parsed.metadata:
-        custom_meta_path = Path(parsed.metadata)
-        if custom_meta_path.exists():
-            with open(custom_meta_path, "r", encoding="utf-8") as handle:
-                try:
-                    user_meta = json.load(handle)
-                except json.JSONDecodeError:
-                    user_meta = {}
-            if isinstance(user_meta, dict):
-                metadata.update({k: str(v) for k, v in user_meta.items()})
+    label_resolver: LabelResolver | None = None
+    detail_resolver: Callable[[Path, Mapping[str, str] | None], Tuple[str | None, str | None]] | None = None
+    metadata: Mapping[str, str] | None = None
+
+    probe_files = datasets.list_audio_files(dataset_path)
+    is_tinysol = any(datasets.parse_tinysol_sample(path) for path in probe_files[: min(len(probe_files), 50)])
+    if is_tinysol:
+        label_resolver = datasets.tinysol_label_resolver
+        detail_resolver = datasets.tinysol_detail_resolver
+    else:
+        metadata = load_nsynth_metadata(dataset_path)
+        if parsed.metadata:
+            custom_meta_path = Path(parsed.metadata)
+            if custom_meta_path.exists():
+                with open(custom_meta_path, "r", encoding="utf-8") as handle:
+                    try:
+                        user_meta = json.load(handle)
+                    except json.JSONDecodeError:
+                        user_meta = {}
+                if isinstance(user_meta, dict):
+                    metadata.update({k: str(v) for k, v in user_meta.items()})
 
     results = analyze_dataset(
         dataset_path=dataset_path,
@@ -283,14 +353,19 @@ def run_cli(args: Optional[Sequence[str]] = None):
         limit=parsed.limit,
         save_reconstructions=parsed.save_recon and output_dir is not None,
         output_dir=output_dir,
+        label_resolver=label_resolver,
+        detail_resolver=detail_resolver,
     )
 
-    summary = summarize_by_label(results)
-    print(format_summary(summary))
+    overall_summary = summarize_overall(results)
+    instrument_summary = summarize_by_instrument(results)
+    print(format_overall(overall_summary))
+    print("\nBy instrument:")
+    print(format_summary(instrument_summary))
 
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
-        save_summary_to_json(summary, output_dir / "metrics_summary.json")
+        save_summary_to_json(instrument_summary, output_dir / "metrics_summary.json", overall=overall_summary)
         label_vectors = label_partial_means(results, n_partials=parsed.partials)
         if label_vectors:
             fig, _ = visualization.plot_label_partial_pca(label_vectors)
