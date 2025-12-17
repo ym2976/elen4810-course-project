@@ -329,17 +329,21 @@ def collect_tinysol_subset(
     Filters TinySOL WAV files and selects a balanced subset across pitch for each instrument.
     """
 
-    instrument_set = set(instruments or TINYSOL_INSTRUMENTS)
+    filter_set = set(instruments) if instruments else None
 
     audio_root = _find_audio_root(root)
     candidates = []
+    available_instruments: set[str] = set()
     for wav_path in list_audio_files(audio_root, extensions=[".wav"]):
         parsed = parse_tinysol_sample(wav_path)
         if not parsed:
             continue
-        if parsed.instrument not in instrument_set:
+        if filter_set and parsed.instrument not in filter_set:
             continue
         candidates.append(parsed)
+        available_instruments.add(parsed.instrument)
+
+    instrument_set = filter_set or available_instruments
 
     grouped: Dict[str, List[TinySolSample]] = {instrument: [] for instrument in instrument_set}
     for sample in candidates:
@@ -348,7 +352,8 @@ def collect_tinysol_subset(
     selected: Dict[str, List[TinySolSample]] = {}
     for instrument, samples in grouped.items():
         if not samples:
-            raise ValueError(f"No samples found for instrument '{instrument}'.")
+            print(f"[TinySOL] Skipping instrument '{instrument}' (no samples found).")
+            continue
         selected[instrument] = _uniform_sample_by_pitch(samples, samples_per_instrument)
 
     return selected
