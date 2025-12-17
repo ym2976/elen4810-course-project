@@ -27,7 +27,7 @@ DATASET_URLS = {
     "tinysol": "https://zenodo.org/records/3685367/files/TinySOL.tar.gz?download=1",
 }
 
-TINYSOL_INSTRUMENTS = {"Trumpet", "Contrabass", "Flute", "Clarinet", "Oboe", "Accordion"}
+TINYSOL_INSTRUMENTS = {"Trumpet in C", "Contrabass", "Flute", "Clarinet", "Oboe", "Accordion"}
 
 
 def _ensure_dir(path: Path) -> Path:
@@ -313,7 +313,7 @@ def collect_tinysol_subset(
     root: Path,
     instruments: Iterable[str] | None = None,
     samples_per_instrument: int = 50,
-    
+    dyn: str = "mf",
 ) -> Dict[str, List[TinySolSample]]:
     """
     Filters TinySOL WAV files and selects a balanced subset across pitch for each instrument.
@@ -329,7 +329,8 @@ def collect_tinysol_subset(
             continue
         if parsed.instrument not in instruments:
             continue
-        
+        if parsed.dyn.lower() != dyn:
+            continue
         candidates.append(parsed)
 
     grouped: Dict[str, List[TinySolSample]] = {instrument: [] for instrument in instruments}
@@ -366,7 +367,7 @@ def prepare_tinysol_subset(
     destination: Path | None = None,
     url: str | None = None,
     samples_per_instrument: int = 50,
-    
+    dyn: str = "mf",
 ) -> Path:
     """
     Downloads TinySOL (if needed), filters to the requested subset, and copies it to a
@@ -380,7 +381,7 @@ def prepare_tinysol_subset(
         destination=dest,
         url_override=url,
     )
-    subset = collect_tinysol_subset(extracted_path, samples_per_instrument=samples_per_instrument)
+    subset = collect_tinysol_subset(extracted_path, samples_per_instrument=samples_per_instrument, dyn=dyn)
     curated_root = dest / "curated"
     materialize_tinysol_subset(subset, curated_root)
     return curated_root
