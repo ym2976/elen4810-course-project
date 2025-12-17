@@ -268,15 +268,22 @@ def parse_tinysol_sample(path: Path) -> TinySolSample | None:
 
 def _find_audio_root(extracted_path: Path) -> Path:
     """
-    Returns the directory containing WAV files within the extracted TinySOL archive.
+    Returns the directory whose immediate children are TinySOL families. Some archives nest
+    the actual data under an extra folder, so we traverse downward until we find the level
+    containing folders like Brass, Strings, Winds, etc.
     """
 
-    if any(extracted_path.glob("*.wav")):
-        return extracted_path
+    family_names = set(TINYSOL_FAMILY_INSTRUMENTS.keys())
+    queue = [extracted_path]
 
-    for candidate in extracted_path.iterdir():
-        if candidate.is_dir() and any(candidate.rglob("*.wav")):
-            return candidate
+    while queue:
+        current = queue.pop(0)
+        child_dirs = [path for path in current.iterdir() if path.is_dir()]
+        child_names = {child.name for child in child_dirs}
+        if family_names & child_names:
+            return current
+        queue.extend(child_dirs)
+
     return extracted_path
 
 
@@ -286,8 +293,10 @@ def _uniform_sample_by_pitch(samples: Sequence[TinySolSample], count: int) -> Li
     """
 
     ordered = sorted(samples, key=lambda item: (item.midi_pitch, item.path.name))
-    if len(ordered) < count:
-        raise ValueError(f"Requested {count} samples but only found {len(ordered)} candidates.")
+    if not ordered:
+        return []
+
+    count = min(count, len(ordered))
 
     targets = [int(round(x)) for x in list(np.linspace(0, len(ordered) - 1, num=count))]
     used = set()
@@ -322,9 +331,16 @@ def collect_tinysol_subset(
     root: Path,
     instruments: Iterable[str] | None = None,
     samples_per_instrument: int = 50,
+    dyn_filter: str | None = "mf",
 ) -> Dict[str, List[TinySolSample]]:
     """
     Filters TinySOL WAV files and selects a balanced subset across pitch for each instrument.
+
+    Args:
+        root: Path containing the TinySOL archive contents (families under this directory).
+        instruments: Optional iterable limiting the instruments to include.
+        samples_per_instrument: Target number of clips per instrument (caps at available clips).
+        dyn_filter: Optional dynamic marking to keep (e.g., "mf"); None keeps all.
     """
 
     filter_set = set(instruments) if instruments else None
@@ -335,6 +351,8 @@ def collect_tinysol_subset(
     for wav_path in list_audio_files(audio_root, extensions=[".wav"]):
         parsed = parse_tinysol_sample(wav_path)
         if not parsed:
+            continue
+        if dyn_filter and parsed.dyn.lower() != dyn_filter.lower():
             continue
         if filter_set and parsed.instrument not in filter_set:
             continue
@@ -378,10 +396,17 @@ def prepare_tinysol_subset(
     destination: Path | None = None,
     url: str | None = None,
     samples_per_instrument: int = 50,
+    dyn_filter: str | None = "mf",
 ) -> Path:
     """
     Downloads TinySOL (if needed), filters to the requested subset, and copies it to a
     curated folder.
+
+    Args:
+        destination: Root directory for dataset storage (defaults to PATH_DATASETS/tinysol).
+        url: Optional override for the TinySOL archive URL.
+        samples_per_instrument: Target number of samples per instrument.
+        dyn_filter: Optional dynamic mark to enforce (defaults to "mf").
     """
 
     url = url or DATASET_URLS["tinysol"]
@@ -391,7 +416,11 @@ def prepare_tinysol_subset(
         destination=dest,
         url_override=url,
     )
-    subset = collect_tinysol_subset(extracted_path, samples_per_instrument=samples_per_instrument)
+    subset = collect_tinysol_subset(
+        extracted_path,
+        samples_per_instrument=samples_per_instrument,
+        dyn_filter=dyn_filter,
+    )
     curated_root = dest / "curated"
     materialize_tinysol_subset(subset, curated_root)
     return curated_root
