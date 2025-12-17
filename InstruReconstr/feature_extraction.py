@@ -1,32 +1,10 @@
-"""
-feature_extraction
-==================
-
-Feature extraction utilities built on top of librosa for spectral analysis,
-MFCCs, fundamental frequency estimation, and reusable preprocessing steps.
-"""
-
 from dataclasses import dataclass
 from typing import Tuple
 import numpy as np
 import librosa
 
-
 @dataclass
 class FeatureBundle:
-    """
-    Container for frequently used audio features.
-
-    Attributes:
-        waveform (np.ndarray): Mono waveform.
-        sample_rate (int): Sample rate of the waveform.
-        stft (np.ndarray): Complex STFT matrix.
-        mel_spectrogram (np.ndarray): Mel power spectrogram.
-        mfcc (np.ndarray): MFCCs derived from the mel spectrogram.
-        f0_hz (np.ndarray): Fundamental frequency trajectory (Hz) with NaNs for unvoiced frames.
-        f0_times (np.ndarray): Time axis (seconds) for the F0 trajectory.
-    """
-
     waveform: np.ndarray
     sample_rate: int
     stft: np.ndarray
@@ -35,22 +13,44 @@ class FeatureBundle:
     f0_hz: np.ndarray
     f0_times: np.ndarray
 
-
 def load_mono_audio(path: str, sample_rate: int = 22050) -> Tuple[np.ndarray, int]:
-    """
-    Loads a file as mono audio using librosa.
-
-    Args:
-        path: Path to the audio file.
-        sample_rate: Target sample rate for loading and resampling.
-
-    Returns:
-        A tuple of (waveform, sample_rate).
-    """
-
     waveform, sr = librosa.load(path, sr=sample_rate, mono=True)
     return waveform, sr
 
+def _smooth_f0(f0_hz: np.ndarray, kernel_size: int = 11) -> np.ndarray:
+    """Median-smooth f0 (ignoring NaNs) to reduce jitter."""
+    f0 = f0_hz.copy()
+    idx = np.where(~np.isnan(f0))[0]
+    if len(idx) == 0:
+        return f0
+
+    # Simple median filter on valid region
+    valid = f0[idx]
+    pad = kernel_size // 2
+    padded = np.pad(valid, (pad, pad), mode="edge")
+    smoothed = np.array([
+        np.nanmedian(padded[i:i+kernel_size]) for i in range(len(valid))
+    ])
+    f0[idx] = smoothed
+    return f0
+
+def _interp_nan(f0_hz: np.ndarray) -> np.ndarray:
+    """Interpolate NaNs inside voiced regions (keep leading/trailing NaNs)."""
+    f0 = f0_hz.copy()
+    n = len(f0)
+    x = np.arange(n)
+    mask = ~np.isnan(f0)
+    if mask.sum() < 2:
+        return f0
+    f0_interp = np.interp(x, x[mask], f0[mask])
+    # keep original NaNs at edges if any
+    first, last = x[mask][0], x[mask][-1]
+    f0[:first] = np.nan
+    f0[last+1:] = np.nan
+    # fill middle NaNs
+    mid_nan = np.isnan(f0)
+    f0[mid_nan] = f0_interp[mid_nan]
+    return f0
 
 def extract_features(
     waveform: np.ndarray,
@@ -60,22 +60,8 @@ def extract_features(
     n_mels: int = 128,
     n_mfcc: int = 20,
 ) -> FeatureBundle:
-    """
-    Computes a common set of spectral features for analysis and modeling.
-
-    Args:
-        waveform: Mono waveform.
-        sample_rate: Sample rate of the waveform.
-        n_fft: FFT size for STFT-based operations.
-        hop_length: Hop size for STFT.
-        n_mels: Number of mel bands for the mel spectrogram.
-        n_mfcc: Number of MFCC coefficients to compute.
-
-    Returns:
-        FeatureBundle with STFT, mel spectrogram, MFCCs, and F0 trajectory.
-    """
-
     stft = librosa.stft(waveform, n_fft=n_fft, hop_length=hop_length)
+
     mel_spec = librosa.feature.melspectrogram(
         y=waveform,
         sr=sample_rate,
@@ -83,8 +69,11 @@ def extract_features(
         hop_length=hop_length,
         n_mels=n_mels,
     )
+
     mfcc = librosa.feature.mfcc(
-        S=librosa.power_to_db(mel_spec, ref=np.max), sr=sample_rate, n_mfcc=n_mfcc
+        S=librosa.power_to_db(mel_spec, ref=np.max),
+        sr=sample_rate,
+        n_mfcc=n_mfcc
     )
 
     f0_hz, voiced_flag, _ = librosa.pyin(
@@ -96,8 +85,12 @@ def extract_features(
     )
     f0_times = librosa.times_like(f0_hz, sr=sample_rate, hop_length=hop_length)
 
-    # Replace unvoiced frames with NaNs for downstream masking.
+    # Replace unvoiced frames with NaNs
     f0_hz = np.where(voiced_flag, f0_hz, np.nan)
+
+    # NEW: stabilize f0 (less jitter -> better harmonic tracking)
+    f0_hz = _smooth_f0(f0_hz, kernel_size=5)
+    f0_hz = _interp_nan(f0_hz)
 
     return FeatureBundle(
         waveform=waveform,
