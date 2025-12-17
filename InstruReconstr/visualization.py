@@ -75,7 +75,7 @@ def plot_partials(partials: Sequence[Tuple[float, float]], title: str = "Estimat
 
     freqs, amps = zip(*partials)
     fig, ax = plt.subplots(figsize=(8, 4))
-    markerline, stemlines, baseline = ax.stem(freqs, amps, use_line_collection=True)
+    markerline, stemlines, baseline = ax.stem(freqs, amps)
     plt.setp(markerline, "markerfacecolor", "orange")
     plt.setp(stemlines, "color", "gray")
     plt.setp(baseline, "color", "black", "linewidth", 1)
