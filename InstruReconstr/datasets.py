@@ -29,7 +29,7 @@ DATASET_URLS = {
         "https://zenodo.org/record/1290750/files/IRMAS-TestingData-Part1.zip",
     ],
     "maestro_v301": [
-        "https://storage.googleapis.com/magentadata/datasets/maestro/MAESTRO-3.0.0.tar.gz",
+        "https://storage.googleapis.com/magentadata/datasets/maestro/v3.0.0/maestro-v3.0.0.zip",
     ],
 }
 
