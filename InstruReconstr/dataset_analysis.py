@@ -179,7 +179,12 @@ def analyze_dataset(
         waveform, sr = feature_extraction.load_mono_audio(str(audio_path), sample_rate=sample_rate)
         features = feature_extraction.extract_features(waveform, sr, hop_length=hop_length)
         model = harmonic_model.fit_and_resynthesize(
-            waveform, sample_rate=sr, n_partials=n_partials, hop_length=hop_length
+            waveform,
+            sample_rate=sr,
+            n_partials=n_partials,
+            hop_length=hop_length,
+            f0_hz=features.f0_hz,
+            residual_mix=0.15,
         )
 
         metrics = evaluation.compute_all_metrics(waveform, model.reconstruction, features.f0_hz, features.f0_hz, sr)
