@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 import shutil
 import tarfile
+import urllib.parse
 import zipfile
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Sequence
@@ -75,7 +76,9 @@ def _extract_archive(archive_path: Path, destination: Path):
 
 
 def _pick_archive_name(url: str) -> str:
-    return url.split("/")[-1] or "dataset.tar.gz"
+    parsed = urllib.parse.urlparse(url)
+    candidate = Path(parsed.path).name or parsed.netloc or "dataset.tar.gz"
+    return candidate
 
 
 def prepare_dataset(
@@ -132,6 +135,13 @@ def prepare_dataset(
                     f"Failed to download dataset '{name}'. Tried URLs: {urls}. "
                     "Provide url_override or local_archive pointing to a valid archive."
                 ) from last_error
+
+    if "?" in archive_path.name:
+        sanitized_name = archive_path.name.split("?")[0] or "dataset.tar.gz"
+        sanitized_path = archive_path.with_name(sanitized_name)
+        if not sanitized_path.exists():
+            archive_path.rename(sanitized_path)
+        archive_path = sanitized_path
 
     extracted_path = dest / "data"
     if not extracted_path.exists():
