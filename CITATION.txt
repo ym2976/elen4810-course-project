@@ -4,7 +4,7 @@ If you are using InstruReconstr in your research, please cite it as follows:
 
 @software{InstruReconstr,
     title = {InstruReconstr: Sparse Sinusoidal Reconstruction of Musical Instruments},
-    author = {Duje Giljanović},
-    year = {2024},
-    url = {github.com/gilja/instruments_fourier_analysis},
+    author = {},
+    year = {2025},
+    url = {https://github.com/ym2976/elen4810-course-project},
 }
