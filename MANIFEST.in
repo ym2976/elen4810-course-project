@@ -1,0 +1,4 @@
+recursive-include InstruReconstr/InstruReconstr_data/instrument_samples *.wav
+include LICENSE.txt
+include README.md
+include CITATION.txt

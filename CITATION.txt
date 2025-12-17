@@ -1,0 +1,10 @@
+Citing InstruReconstr
+
+If you are using InstruReconstr in your research, please cite it as follows:
+
+@software{InstruReconstr,
+    title = {InstruReconstr: Sparse Sinusoidal Reconstruction of Musical Instruments},
+    author = {Duje Giljanović},
+    year = {2024},
+    url = {github.com/gilja/instruments_fourier_analysis},
+}
