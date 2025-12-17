@@ -2,10 +2,10 @@
 
 Sparse sinusoidal reconstruction and analysis toolkit for musical instrument audio. The library can:
 
-* download and organize public datasets (NSynth/IRMAS/MAESTRO) with resilient mirrors;
+* download and curate a balanced TinySOL subset (50 mf ordinario samples for six instruments) with preserved family/instrument folder layout;
 * extract STFT, mel, MFCC, F0, envelopes, and partials with `librosa`;
 * fit a lightweight harmonic model, resynthesize audio, and report metrics (LSD, F0 RMSE, spectral convergence, waveform RMSE, spectrogram RMSE);
-* batch reconstruct entire datasets, aggregate metrics per instrument class, and visualize label-level partials with PCA;
+* batch reconstruct entire datasets, aggregate metrics per instrument class (overall + per-instrument), and visualize label-level partials with PCA;
 * provide an interactive Gradio demo to compare originals vs. reconstructions with aligned plots and metrics.
 
 Python ≥3.9 is required.
@@ -22,31 +22,37 @@ pip install '.[playback]'
 ```
 
 
-## Dataset preparation
+## Dataset preparation (TinySOL)
 
-Use the built-in helper to download NSynth/IRMAS/MAESTRO subsets. NSynth now defaults to the TensorFlow mirror (`http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.jsonwav.tar.gz`), with fallbacks kept for robustness.
+The toolkit now focuses on TinySOL. It downloads from the official Zenodo link and curates a balanced subset:
+
+* Instruments: Trumpet, Contrabass, Flute, Clarinet, Oboe, Accordion.
+* Articulation: `ordinario` only.
+* Dynamics: `mf` only.
+* Sampling: 50 WAVs per instrument, pitches evenly spread over C0–B8.
+
+Prepare the dataset (downloads + extracts + curates) with:
 
 ```python
 from pathlib import Path
 from InstruReconstr import datasets, ConfigManager
 
 cfg = ConfigManager.get_instance().config
-root = Path(cfg.PATH_DATASETS)
-nsynth = datasets.prepare_dataset("nsynth_test_subset")  # downloads + extracts under PATH_DATASETS
-audio_files = datasets.list_audio_files(nsynth)
-print(f"Found {len(audio_files)} files")
+curated = datasets.prepare_tinysol_subset()  # stored under PATH_DATASETS/tinysol/curated
+print(curated)
 ```
 
-To use your own mirror or a pre-downloaded archive:
+If you already have the archive or want to override the URL:
 
 ```python
-custom = datasets.prepare_dataset(
-    "nsynth_test_subset",
-    url_override="https://your.mirror/nsynth-test.jsonwav.tar.gz",
-    # or
-    local_archive=Path("/path/to/nsynth-test.jsonwav.tar.gz"),
+custom = datasets.prepare_tinysol_subset(
+    url="https://zenodo.org/records/3685367/files/TinySOL.tar.gz?download=1",
+    samples_per_instrument=50,
+    dyn="mf",
 )
 ```
+
+The curated structure keeps the original naming convention and folders (`<FAMILY>/<INSTRUMENT>/ordinario/<INSTR>-ord-<PITCH>-<DYN>-<INSTANCE>-<MISC>.wav`).
 
 
 ## Single-file analysis
@@ -76,22 +82,22 @@ python -m InstruReconstr.interactive data/example.wav --partials 12 --output-dir
 
 ## Dataset-wide reconstruction and reporting
 
-Reconstruct **every** audio file in a dataset, aggregate metrics per instrument class, and export a PCA plot of label-level partials:
+Reconstruct **every** audio file in a dataset (TinySOL curated subset is the main target), aggregate metrics overall and per instrument, and export a PCA plot of label-level partials:
 
 ```bash
 python -m InstruReconstr.dataset_analysis \
-  /path/to/nsynth/data \
+  ~/InstruReconstr_datasets/tinysol/curated \
   --partials 12 \
-  --output-dir results/nsynth_run \
+  --output-dir results/tinysol_run \
   --save-recon
 ```
 
 The script will:
 
 * rebuild each WAV, compute all five metrics, and (optionally) save reconstructions;
-* derive labels via NSynth metadata when available or fall back to the parent directory name;
-* print mean ± std for every metric per label;
-* write `metrics_summary.json` and `label_partial_pca.png` into the output directory.
+* derive instrument and pitch labels from TinySOL filenames (or fall back to directory/metadata for other datasets);
+* print overall mean ± std plus per-instrument mean ± std for every metric;
+* write `metrics_summary.json` (overall + per instrument) and `label_partial_pca.png` into the output directory.
 
 
 ## Gradio demo
