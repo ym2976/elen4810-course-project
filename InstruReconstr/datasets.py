@@ -236,8 +236,6 @@ def parse_tinysol_sample(path: Path) -> TinySolSample | None:
 
     family = path.parts[ord_idx - 2]
     instrument_dir = path.parts[ord_idx - 1]
-    if instrument_dir not in TINYSOL_INSTRUMENTS:
-        return None
 
     stem_parts = path.stem.split("-")
     if len(stem_parts) < 5:
