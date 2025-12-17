@@ -27,7 +27,7 @@ DATASET_URLS = {
     "tinysol": "https://zenodo.org/records/3685367/files/TinySOL.tar.gz?download=1",
 }
 
-TINYSOL_INSTRUMENTS = {"Contrabass", "Flute", "Clarinet", "Oboe", "Accordion"}
+TINYSOL_INSTRUMENTS = {"Contrabass","Bass_Tuba" "Flute", "Alto_Saxophone", "Oboe", "Accordion"}
 
 
 def _ensure_dir(path: Path) -> Path:
