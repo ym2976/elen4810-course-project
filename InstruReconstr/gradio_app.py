@@ -1,10 +1,4 @@
-"""
-gradio_app
-==========
 
-Interactive Gradio demo for uploading audio, viewing original vs. reconstructed
-waveforms/spectrograms/envelopes/partials, and inspecting reconstruction metrics.
-"""
 
 from __future__ import annotations
 
@@ -12,6 +6,7 @@ from typing import Any, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import gradio as gr
+import librosa  # used in spectrogram
 
 from . import feature_extraction
 from . import harmonic_model
@@ -20,6 +15,7 @@ from . import visualization
 
 
 def _waveform_plot(waveform: np.ndarray, sample_rate: int, title: str):
+    """Plot a time-domain waveform."""
     times = np.arange(len(waveform)) / sample_rate
     fig, ax = plt.subplots(figsize=(6, 3))
     ax.plot(times, waveform, color="steelblue")
@@ -30,9 +26,15 @@ def _waveform_plot(waveform: np.ndarray, sample_rate: int, title: str):
     return fig
 
 
-def _spectrogram_plot(waveform: np.ndarray, sample_rate: int, title: str, n_fft: int = 2048, hop_length: int = 512):
+def _spectrogram_plot(
+    waveform: np.ndarray,
+    sample_rate: int,
+    title: str,
+    n_fft: int = 2048,
+    hop_length: int = 512,
+):
+    """Plot a log-frequency magnitude spectrogram."""
     fig, ax = plt.subplots(figsize=(6, 3))
-    import librosa
     import librosa.display
 
     stft = np.abs(librosa.stft(waveform, n_fft=n_fft, hop_length=hop_length))
@@ -53,6 +55,7 @@ def _spectrogram_plot(waveform: np.ndarray, sample_rate: int, title: str, n_fft:
 
 
 def _format_metrics_table(metrics: evaluation.ReconstructionMetrics) -> str:
+    """Format metrics as a small Markdown table."""
     rows = [
         ("Log-spectral distance", metrics.log_spectral_distance),
         ("F0 RMSE (Hz)", metrics.f0_rmse_hz),
@@ -66,23 +69,43 @@ def _format_metrics_table(metrics: evaluation.ReconstructionMetrics) -> str:
     return "\n".join(lines)
 
 
-def process(
-    audio_path: str,
-    n_partials: int = 12,
-    hop_length: int = 512,
-) -> Tuple[Any, Any, Any, Any, Any, Any, Tuple[int, np.ndarray], Tuple[int, np.ndarray], str]:
+def process(audio_path: str, n_partials: int = 12, hop_length: int = 512):
+    """
+    Main processing function called by Gradio.
+
+    Outputs (9):
+      1-6 plots
+      7-8 audio (original / reconstructed)
+      9 metrics markdown
+    """
     if not audio_path:
         return (None,) * 9
 
     sample_rate = 22050
     waveform, sr = feature_extraction.load_mono_audio(audio_path, sample_rate=sample_rate)
     features = feature_extraction.extract_features(waveform, sr, hop_length=hop_length)
+
+    # Harmonic analysis-resynthesis (the "sounds like" path)
     model = harmonic_model.fit_and_resynthesize(
-        waveform, sample_rate=sr, n_partials=n_partials, hop_length=hop_length
+        waveform,
+        sample_rate=sr,
+        n_partials=n_partials,
+        hop_length=hop_length,
+        f0_hz=features.f0_hz,
+        residual_mix=0.15,
     )
 
-    metrics = evaluation.compute_all_metrics(waveform, model.reconstruction, features.f0_hz, features.f0_hz, sr)
+    # Compute metrics using a separate F0 track from the reconstruction
+    recon_features = feature_extraction.extract_features(model.reconstruction, sr, hop_length=hop_length)
+    metrics = evaluation.compute_all_metrics(
+        waveform,
+        model.reconstruction,
+        features.f0_hz,
+        recon_features.f0_hz,
+        sr,
+    )
 
+    # Plots
     orig_wave_fig = _waveform_plot(waveform, sr, "Original waveform")
     orig_spec_fig = _spectrogram_plot(waveform, sr, "Original spectrogram", hop_length=hop_length)
 
@@ -108,6 +131,7 @@ def process(
 
 
 def build_demo() -> gr.Blocks:
+    """Build the Gradio UI."""
     with gr.Blocks(title="InstruReconstr") as demo:
         gr.Markdown("# InstruReconstr demo\nUpload audio, inspect features, and compare reconstructions.")
 
@@ -130,6 +154,7 @@ def build_demo() -> gr.Blocks:
         with gr.Row():
             orig_audio = gr.Audio(label="Original audio", type="numpy")
             recon_audio = gr.Audio(label="Reconstructed audio", type="numpy")
+
         metrics_md = gr.Markdown(label="Metrics")
 
         for control in (audio_input, n_partials, hop_length):
@@ -148,6 +173,7 @@ def build_demo() -> gr.Blocks:
                     metrics_md,
                 ],
             )
+
     return demo
 
 
