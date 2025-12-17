@@ -64,7 +64,13 @@ from InstruReconstr import feature_extraction, harmonic_model, evaluation, visua
 path = Path("data/example.wav")
 waveform, sr = feature_extraction.load_mono_audio(str(path), sample_rate=22050)
 features = feature_extraction.extract_features(waveform, sr)
-model = harmonic_model.fit_and_resynthesize(waveform, sr, n_partials=12)
+model = harmonic_model.fit_and_resynthesize(
+        waveform,
+        sample_rate=sr,
+        n_partials=n_partials,
+        hop_length=hop_length,
+        f0_hz=features.f0_hz,
+        residual_mix=0.15)
 metrics = evaluation.compute_all_metrics(waveform, model.reconstruction, features.f0_hz, features.f0_hz, sr)
 
 print(metrics)
