@@ -324,6 +324,7 @@ def collect_tinysol_subset(
     audio_root = _find_audio_root(root)
     candidates = []
     for wav_path in list_audio_files(audio_root, extensions=[".wav"]):
+        print(wav_path)
         parsed = parse_tinysol_sample(wav_path)
         if not parsed:
             continue
