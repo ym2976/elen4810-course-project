@@ -27,6 +27,49 @@ from . import visualization
 LabelResolver = Callable[[Path, Mapping[str, str] | None], str]
 
 
+TINYSOL_INSTRUMENTS = {
+    "Brass": ["Bass_Tuba", "Horn", "Trombone", "Trumpet_C"],
+    "Keyboards": ["Accordion"],
+    "Strings": ["Contrabass", "Viola", "Violin", "Violoncello"],
+    "Winds": ["Bassoon", "Clarinet_Bb", "Flute", "Oboe", "Sax_Alto"],
+}
+
+
+def _normalize_name_for_lookup(value: str) -> str:
+    """Normalizes TinySOL tokens so folder/file variations can be matched."""
+
+    return value.replace("_", "").replace("-", "").lower()
+
+
+_TINYSOL_INSTRUMENT_LOOKUP = {
+    _normalize_name_for_lookup(instrument): instrument
+    for instruments in TINYSOL_INSTRUMENTS.values()
+    for instrument in instruments
+}
+
+
+def _looks_like_tinysol_path(path: Path) -> bool:
+    """Returns True if the path is inside a TinySOL dataset tree."""
+
+    return any(part.lower() == "tinysol" for part in path.parts)
+
+
+def resolve_tinysol_instrument(path: Path) -> str | None:
+    """Attempts to recover the TinySOL instrument name from a file path."""
+
+    if not _looks_like_tinysol_path(path):
+        return None
+
+    for part in reversed(path.parts):
+        key = _normalize_name_for_lookup(part)
+        if key in _TINYSOL_INSTRUMENT_LOOKUP:
+            return _TINYSOL_INSTRUMENT_LOOKUP[key]
+
+    stem_prefix = path.stem.split("-")[0]
+    key = _normalize_name_for_lookup(stem_prefix)
+    return _TINYSOL_INSTRUMENT_LOOKUP.get(key)
+
+
 @dataclass
 class FileAnalysis:
     """
@@ -100,6 +143,9 @@ def default_label_resolver(path: Path, metadata: Mapping[str, str] | None = None
 
     if metadata and path.stem in metadata:
         return metadata[path.stem]
+    tinysol = resolve_tinysol_instrument(path)
+    if tinysol:
+        return tinysol
     return path.parent.name
 
 
