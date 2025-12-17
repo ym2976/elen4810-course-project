@@ -105,6 +105,30 @@ The script will:
 * print overall mean ± std plus per-instrument mean ± std for every metric;
 * write `metrics_summary.json` (overall + per instrument) and `label_partial_pca.png` into the output directory.
 
+## Diagnostics
+
+Use the diagnostic helper to understand when harmonic reconstruction succeeds or fails, and to
+visualize correlations between reconstruction metrics and audio descriptors (F0 coverage, duration,
+spectral centroid, etc.):
+
+```bash
+python -m InstruReconstr.diagnostic \
+  ~/InstruReconstr_datasets/tinysol/curated \
+  --partials 16 \
+  --limit 200 \
+  --output-dir results/tinysol_diagnostic
+```
+
+The script saves:
+
+* `summary.txt`: best/worst files by the selected metric (default LSD).
+* `diagnostic_records.json`: metrics plus descriptors for each analyzed file.
+* `metric_correlations.png`: scatter plots showing descriptor vs. metric correlations.
+* `{best,worst}_*.png`: waveform/spectrogram comparisons for the extremal examples.
+
+Use this to identify which instruments/pitches/dynamics are reconstructed accurately and which ones
+drive the largest errors.
+
 
 ## Gradio demo
 
