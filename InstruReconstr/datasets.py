@@ -27,7 +27,15 @@ DATASET_URLS = {
     "tinysol": "https://zenodo.org/records/3685367/files/TinySOL.tar.gz?download=1",
 }
 
-TINYSOL_INSTRUMENTS = {"Contrabass","Bass_Tuba" "Flute", "Alto_Saxophone", "Oboe", "Accordion"}
+TINYSOL_FAMILY_INSTRUMENTS: Dict[str, List[str]] = {
+    "Brass": ["Bass_Tuba", "Horn", "Trombone", "Trumpet_C"],
+    "Keyboards": ["Accordion"],
+    "Strings": ["Contrabass", "Viola", "Violin", "Violoncello"],
+    "Winds": ["Bassoon", "Clarinet_Bb", "Flute", "Oboe", "Sax_Alto"],
+}
+TINYSOL_INSTRUMENTS = tuple(
+    instrument for instruments in TINYSOL_FAMILY_INSTRUMENTS.values() for instrument in instruments
+)
 
 
 def _ensure_dir(path: Path) -> Path:
@@ -217,37 +225,40 @@ def parse_tinysol_sample(path: Path) -> TinySolSample | None:
     does not match the expected layout.
     """
 
+    parts_lower = [part.lower() for part in path.parts]
     try:
-        ord_idx = path.parts.index("ordinario")
+        ord_idx = parts_lower.index("ordinario")
     except ValueError:
         return None
 
-    if ord_idx < 1 or len(path.parts) < ord_idx + 1:
+    if ord_idx < 2 or len(path.parts) <= ord_idx:
         return None
 
-    family = path.parts[ord_idx - 2] if ord_idx >= 2 else ""
+    family = path.parts[ord_idx - 2]
     instrument_dir = path.parts[ord_idx - 1]
+    if instrument_dir not in TINYSOL_INSTRUMENTS:
+        return None
+
     stem_parts = path.stem.split("-")
     if len(stem_parts) < 5:
         return None
 
-    instrument_name = stem_parts[0]
     articulation = stem_parts[1]
-    pitch = stem_parts[2]
-    dyn = stem_parts[3]
-    instance = stem_parts[4]
-    misc = "-".join(stem_parts[5:]) if len(stem_parts) > 5 else ""
-
     if articulation.lower() != "ord":
         return None
-    if instrument_name.lower() != instrument_dir.lower():
-        return None
+
+    pitch = stem_parts[2]
+    dyn = stem_parts[3]
+
+    remaining = stem_parts[4:]
+    instance = remaining[0] if remaining else ""
+    misc = "-".join(remaining[1:]) if len(remaining) > 1 else ""
 
     try:
         return TinySolSample(
             path=path,
             family=family,
-            instrument=instrument_name,
+            instrument=instrument_dir,
             pitch=pitch,
             dyn=dyn,
             instance=instance,
@@ -313,27 +324,24 @@ def collect_tinysol_subset(
     root: Path,
     instruments: Iterable[str] | None = None,
     samples_per_instrument: int = 50,
-    
 ) -> Dict[str, List[TinySolSample]]:
     """
     Filters TinySOL WAV files and selects a balanced subset across pitch for each instrument.
     """
 
-    instruments = set(instruments or TINYSOL_INSTRUMENTS)
-    
+    instrument_set = set(instruments or TINYSOL_INSTRUMENTS)
+
     audio_root = _find_audio_root(root)
     candidates = []
     for wav_path in list_audio_files(audio_root, extensions=[".wav"]):
-        print(wav_path)
         parsed = parse_tinysol_sample(wav_path)
         if not parsed:
             continue
-        if parsed.instrument not in instruments:
+        if parsed.instrument not in instrument_set:
             continue
-        
         candidates.append(parsed)
 
-    grouped: Dict[str, List[TinySolSample]] = {instrument: [] for instrument in instruments}
+    grouped: Dict[str, List[TinySolSample]] = {instrument: [] for instrument in instrument_set}
     for sample in candidates:
         grouped.setdefault(sample.instrument, []).append(sample)
 
@@ -367,7 +375,6 @@ def prepare_tinysol_subset(
     destination: Path | None = None,
     url: str | None = None,
     samples_per_instrument: int = 50,
-    
 ) -> Path:
     """
     Downloads TinySOL (if needed), filters to the requested subset, and copies it to a
