@@ -48,42 +48,12 @@ If you already have the archive or want to override the URL:
 custom = datasets.prepare_tinysol_subset(
     url="https://zenodo.org/records/3685367/files/TinySOL.tar.gz?download=1",
     samples_per_instrument=50,
-    dyn="mf",
+    dyn_filter="mf",
 )
 ```
 
 The curated structure keeps the original naming convention and folders (`<FAMILY>/<INSTRUMENT>/ordinario/<INSTR>-ord-<PITCH>-<DYN>-<INSTANCE>-<MISC>.wav`).
 
-
-## Single-file analysis
-
-```python
-from pathlib import Path
-from InstruReconstr import feature_extraction, harmonic_model, evaluation, visualization
-
-path = Path("data/example.wav")
-waveform, sr = feature_extraction.load_mono_audio(str(path), sample_rate=22050)
-features = feature_extraction.extract_features(waveform, sr)
-model = harmonic_model.fit_and_resynthesize(
-        waveform,
-        sample_rate=sr,
-        n_partials=n_partials,
-        hop_length=hop_length,
-        f0_hz=features.f0_hz,
-        residual_mix=0.15)
-metrics = evaluation.compute_all_metrics(waveform, model.reconstruction, features.f0_hz, features.f0_hz, sr)
-
-print(metrics)
-visualization.plot_waveform_and_spectrogram(waveform, sr, title="Original")
-visualization.plot_envelope(model.envelope, sr, title="Envelope (RMS)")
-visualization.plot_partials(model.partials_hz_amp, title="Estimated partials")
-```
-
-Run the interactive CLI (prints metrics and exports WAVs) with:
-
-```bash
-python -m InstruReconstr.interactive data/example.wav --partials 12 --output-dir results/ab_test
-```
 
 
 ## Dataset-wide reconstruction and diagnostics
