@@ -5,7 +5,7 @@ from . import feature_extraction
 from . import harmonic_model
 from . import synthesis
 from . import visualization
-from . import dataset_analysis
+from . import data_analysis
 
 
 def initialize_config(config_path=None):

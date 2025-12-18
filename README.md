@@ -86,48 +86,37 @@ python -m InstruReconstr.interactive data/example.wav --partials 12 --output-dir
 ```
 
 
-## Dataset-wide reconstruction and reporting
+## Dataset-wide reconstruction and diagnostics
 
-Reconstruct **every** audio file in a dataset (TinySOL curated subset is the main target), aggregate metrics overall and per instrument, and export a PCA plot of label-level partials:
+Run the unified analysis script to sample each instrument deterministically, rebuild the selected
+clips, compute metrics, export best/worst examples, and correlate descriptors with reconstruction
+quality:
 
 ```bash
-python -m InstruReconstr.dataset_analysis \
+python -m InstruReconstr.data_analysis \
   ~/InstruReconstr_datasets/tinysol/curated \
-  --partials 12 \
-  --output-dir results/tinysol_run \
+  --partials 16 \
+  --per-instrument-limit 20 \
+  --examples-overall 5 \
+  --examples-per-instrument 3 \
+  --output-dir results/tinysol_analysis \
   --save-recon
 ```
 
-The script will:
+Highlights:
 
-* rebuild each WAV, compute all five metrics, and (optionally) save reconstructions;
-* derive instrument and pitch labels from TinySOL filenames (or fall back to directory/metadata for other datasets);
-* print overall mean ± std plus per-instrument mean ± std for every metric;
-* write `metrics_summary.json` (overall + per instrument) and `label_partial_pca.png` into the output directory.
+* deterministically sample up to `--per-instrument-limit` clips per instrument (or provide a JSON
+  mapping via `--instrument-limit-config`), with an optional global `--limit`;
+* compute all metrics (LSD, F0 RMSE, spectral convergence, waveform RMSE, spectrogram RMSE) overall
+  and per instrument;
+* export best/worst examples overall (default 5) and per instrument (default 3) with waveform,
+  spectrogram, and pyin F0 plots for each sample;
+* save reconstruction WAVs (optional), full metric/descriptor records, and summary tables;
+* compute descriptor correlations (voiced ratio, F0 jitter, harmonic energy ratio, spectral
+  flatness, centroid, onset strength, etc.) against LSD with Spearman r / p-values and scatter plots.
 
-## Diagnostics
-
-Use the diagnostic helper to understand when harmonic reconstruction succeeds or fails, and to
-visualize correlations between reconstruction metrics and audio descriptors (F0 coverage, duration,
-spectral centroid, etc.):
-
-```bash
-python -m InstruReconstr.diagnostic \
-  ~/InstruReconstr_datasets/tinysol/curated \
-  --partials 16 \
-  --limit 200 \
-  --output-dir results/tinysol_diagnostic
-```
-
-The script saves:
-
-* `summary.txt`: best/worst files by the selected metric (default LSD).
-* `diagnostic_records.json`: metrics plus descriptors for each analyzed file.
-* `metric_correlations.png`: scatter plots showing descriptor vs. metric correlations.
-* `{best,worst}_*.png`: waveform/spectrogram comparisons for the extremal examples.
-
-Use this to identify which instruments/pitches/dynamics are reconstructed accurately and which ones
-drive the largest errors.
+Use the generated plots and JSON summaries inside `results/tinysol_analysis` to identify which
+instruments or acoustic properties produce accurate reconstructions vs. high-error cases.
 
 
 ## Gradio demo
