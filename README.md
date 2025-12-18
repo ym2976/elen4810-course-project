@@ -2,10 +2,10 @@
 
 Sparse sinusoidal reconstruction and analysis toolkit for musical instrument audio. The library can:
 
-* download and curate a balanced TinySOL subset (50 mf ordinario samples for six instruments) with preserved family/instrument folder layout;
+* download and curate a balanced TinySOL subset (50 mf ordinario samples) with preserved family/instrument folder layout;
 * extract STFT, mel, MFCC, F0, envelopes, and partials with `librosa`;
 * fit a lightweight harmonic model, resynthesize audio, and report metrics (LSD, F0 RMSE, spectral convergence, waveform RMSE, spectrogram RMSE);
-* batch reconstruct entire datasets, aggregate metrics per instrument class (overall + per-instrument), and visualize label-level partials with PCA;
+* Reconstruct entire datasets, aggregate metrics per instrument class (overall + per-instrument), and analyze the performance;
 * provide an interactive Gradio demo to compare originals vs. reconstructions with aligned plots and metrics.
 
 Python ≥3.9 is required.
