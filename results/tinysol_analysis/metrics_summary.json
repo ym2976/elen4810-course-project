@@ -1,0 +1,334 @@
+{
+  "overall": {
+    "log_spectral_distance": {
+      "mean": 9.54292494518638,
+      "std": 4.15727984585479
+    },
+    "f0_rmse_hz": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "spectral_convergence": {
+      "mean": 19.75330297697463,
+      "std": 15.624877801688829
+    },
+    "rmse_waveform": {
+      "mean": 0.2737511574648417,
+      "std": 0.09818626648774513
+    },
+    "rmse_spectrogram": {
+      "mean": 7.02640502625935,
+      "std": 2.516601670311615
+    }
+  },
+  "by_label": {
+    "Contrabass": {
+      "log_spectral_distance": {
+        "mean": 9.261206576281332,
+        "std": 2.8698428634543927
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 16.789731972903265,
+        "std": 9.36825084117457
+      },
+      "rmse_waveform": {
+        "mean": 0.24079377121720733,
+        "std": 0.06824991241949689
+      },
+      "rmse_spectrogram": {
+        "mean": 6.073304789935465,
+        "std": 1.4087658579671616
+      }
+    },
+    "Clarinet_Bb": {
+      "log_spectral_distance": {
+        "mean": 5.088777851550075,
+        "std": 1.8329781028586043
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 15.69723384574353,
+        "std": 6.984814981243788
+      },
+      "rmse_waveform": {
+        "mean": 0.3165402230531132,
+        "std": 0.1048768313758288
+      },
+      "rmse_spectrogram": {
+        "mean": 8.168409647401653,
+        "std": 2.8200101460636184
+      }
+    },
+    "Viola": {
+      "log_spectral_distance": {
+        "mean": 12.954793222078573,
+        "std": 2.0808211437293016
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 33.023228463811584,
+        "std": 12.655922105813412
+      },
+      "rmse_waveform": {
+        "mean": 0.2246504044033693,
+        "std": 0.056756287564507846
+      },
+      "rmse_spectrogram": {
+        "mean": 5.9975314983141965,
+        "std": 1.5308125257443186
+      }
+    },
+    "Sax_Alto": {
+      "log_spectral_distance": {
+        "mean": 9.646687564445749,
+        "std": 2.7040613992550617
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 10.046209345689116,
+        "std": 3.6858724951347503
+      },
+      "rmse_waveform": {
+        "mean": 0.26744828461931847,
+        "std": 0.062301099116903645
+      },
+      "rmse_spectrogram": {
+        "mean": 6.6374976169553195,
+        "std": 1.5059074584482879
+      }
+    },
+    "Violoncello": {
+      "log_spectral_distance": {
+        "mean": 13.208309919451239,
+        "std": 2.5361879473219577
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 15.918553231015878,
+        "std": 5.849959441552378
+      },
+      "rmse_waveform": {
+        "mean": 0.20946270842645562,
+        "std": 0.03395349374858475
+      },
+      "rmse_spectrogram": {
+        "mean": 5.446514691428656,
+        "std": 0.8985431933077805
+      }
+    },
+    "Bassoon": {
+      "log_spectral_distance": {
+        "mean": 6.798403773961856,
+        "std": 2.338131670781406
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 15.496569080253206,
+        "std": 7.701069427431475
+      },
+      "rmse_waveform": {
+        "mean": 0.35536536250775597,
+        "std": 0.1011259252491849
+      },
+      "rmse_spectrogram": {
+        "mean": 9.118469810450424,
+        "std": 2.62420433320486
+      }
+    },
+    "Horn": {
+      "log_spectral_distance": {
+        "mean": 6.648553545449964,
+        "std": 2.6688710728824256
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 23.41343098672907,
+        "std": 17.62292994198377
+      },
+      "rmse_waveform": {
+        "mean": 0.3335910151854592,
+        "std": 0.11414782734622986
+      },
+      "rmse_spectrogram": {
+        "mean": 8.629465728936232,
+        "std": 2.8457388137594335
+      }
+    },
+    "Accordion": {
+      "log_spectral_distance": {
+        "mean": 9.276282284459388,
+        "std": 3.7291985723215246
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 42.795415044399086,
+        "std": 33.15777081190719
+      },
+      "rmse_waveform": {
+        "mean": 0.23665039816807915,
+        "std": 0.08409487666542473
+      },
+      "rmse_spectrogram": {
+        "mean": 6.372304521088001,
+        "std": 2.3397916962202587
+      }
+    },
+    "Bass_Tuba": {
+      "log_spectral_distance": {
+        "mean": 5.448069118958459,
+        "std": 2.282671611154029
+      },
+      "f0_rmse_hz": {
+        "mean": NaN,
+        "std": NaN
+      },
+      "spectral_convergence": {
+        "mean": 22.970666206506717,
+        "std": 11.879882357122792
+      },
+      "rmse_waveform": {
+        "mean": 0.30662419736308694,
+        "std": 0.0871951000703872
+      },
+      "rmse_spectrogram": {
+        "mean": 8.05326133331336,
+        "std": 2.2200492981387114
+      }
+    },
+    "Trombone": {
+      "log_spectral_distance": {
+        "mean": 8.148854791695435,
+        "std": 2.1155886636400054
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 5.841964713114361,
+        "std": 2.6955781933411287
+      },
+      "rmse_waveform": {
+        "mean": 0.2355544986358502,
+        "std": 0.08056870151902605
+      },
+      "rmse_spectrogram": {
+        "mean": 5.306937584062876,
+        "std": 1.494149528298934
+      }
+    },
+    "Violin": {
+      "log_spectral_distance": {
+        "mean": 17.257286873843306,
+        "std": 2.7527248001406273
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 25.145380346296154,
+        "std": 9.63528864847247
+      },
+      "rmse_waveform": {
+        "mean": 0.17670501399201685,
+        "std": 0.035384158574700876
+      },
+      "rmse_spectrogram": {
+        "mean": 4.711155950811053,
+        "std": 1.0083388017783725
+      }
+    },
+    "Trumpet_C": {
+      "log_spectral_distance": {
+        "mean": 12.95551587580832,
+        "std": 2.004678297500196
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 18.49540410738344,
+        "std": 3.5020252518589223
+      },
+      "rmse_waveform": {
+        "mean": 0.2462556821436274,
+        "std": 0.058714661544219345
+      },
+      "rmse_spectrogram": {
+        "mean": 6.4416324173850255,
+        "std": 1.5224275586053007
+      }
+    },
+    "Flute": {
+      "log_spectral_distance": {
+        "mean": 9.439256533487688,
+        "std": 2.532128681814466
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 21.737932990800097,
+        "std": 10.875718598000178
+      },
+      "rmse_waveform": {
+        "mean": 0.3866352665960676,
+        "std": 0.11095296601252645
+      },
+      "rmse_spectrogram": {
+        "mean": 10.051136783472234,
+        "std": 2.8650127766107003
+      }
+    },
+    "Oboe": {
+      "log_spectral_distance": {
+        "mean": 7.468951301137937,
+        "std": 1.7129208019566682
+      },
+      "f0_rmse_hz": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "spectral_convergence": {
+        "mean": 9.174521342999324,
+        "std": 3.0320085838720674
+      },
+      "rmse_waveform": {
+        "mean": 0.2962393781963762,
+        "std": 0.050412675631536424
+      },
+      "rmse_spectrogram": {
+        "mean": 7.3620479940764,
+        "std": 1.3708739786641164
+      }
+    }
+  }
+}

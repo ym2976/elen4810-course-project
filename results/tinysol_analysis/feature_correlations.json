@@ -1,0 +1,66 @@
+{
+  "centroid_mean": {
+    "spearman_r": 0.5324204208144054,
+    "p_value": 6.712553700781779e-22
+  },
+  "centroid_std": {
+    "spearman_r": 0.36361414959738914,
+    "p_value": 3.5359767582914825e-10
+  },
+  "f0_jitter": {
+    "spearman_r": 0.37250711758801464,
+    "p_value": 1.3019287986641915e-10
+  },
+  "f0_med": {
+    "spearman_r": -0.016055317552077814,
+    "p_value": 0.7894769428882508
+  },
+  "f0_std": {
+    "spearman_r": 0.29580959885161767,
+    "p_value": 4.857161566555036e-07
+  },
+  "flatness_mean": {
+    "spearman_r": 0.592060941010545,
+    "p_value": 7.070896861988849e-28
+  },
+  "flatness_p90": {
+    "spearman_r": 0.7482444200272234,
+    "p_value": 1.828383268235407e-51
+  },
+  "flux_p90": {
+    "spearman_r": 0.1477447780857263,
+    "p_value": 0.013331837327207326
+  },
+  "harmonic_energy_ratio": {
+    "spearman_r": -0.564349946154561,
+    "p_value": 5.988035241340201e-25
+  },
+  "octave_jump_rate": {
+    "spearman_r": 0.028120811984908994,
+    "p_value": 0.6400035146936758
+  },
+  "onset_p90": {
+    "spearman_r": 0.5944208472046837,
+    "p_value": 3.8633379934734817e-28
+  },
+  "rms_dynamic_range": {
+    "spearman_r": -0.3869907232781759,
+    "p_value": 1.94791002599535e-11
+  },
+  "rolloff_mean": {
+    "spearman_r": 0.5964232415500926,
+    "p_value": 2.304195563270247e-28
+  },
+  "voiced_fragmentation": {
+    "spearman_r": -0.3485662190749916,
+    "p_value": 2.027135328663416e-09
+  },
+  "voiced_ratio": {
+    "spearman_r": 0.1033254885477436,
+    "p_value": 0.08437371875648479
+  },
+  "zcr_mean": {
+    "spearman_r": 0.3968091794173759,
+    "p_value": 5.3736264362492e-12
+  }
+}
