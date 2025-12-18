@@ -120,55 +120,92 @@ def _overlap_add_synthesis(
     harm_amps_t: np.ndarray,
     hop_length: int,
     duration_samples: int,
+    win_length: Optional[int] = None,  # if None -> 2 * hop_length
 ) -> np.ndarray:
     """
     Frame-wise additive synthesis using harmonic tracks with phase continuity
-    and overlap-add (OLA) normalization to avoid amplitude beating.
+    and overlap-add (OLA) normalization.
+
+    Important detail:
+      - Even when f0 is NaN (unvoiced frame), we STILL accumulate the window
+        into wsum so that OLA normalization doesn't create hard boundary clicks.
+
+    Args:
+        sample_rate: Sampling rate (Hz).
+        f0_hz: (T,) f0 per frame (NaNs allowed).
+        harm_amps_t: (K, T) harmonic amplitude tracks (typically 0..1).
+        hop_length: Hop size in samples.
+        duration_samples: Output length in samples.
+        win_length: Synthesis window length. If None, uses 2 * hop_length.
+
+    Returns:
+        y: (duration_samples,) synthesized waveform, normalized.
     """
     K, T = harm_amps_t.shape
-    y = np.zeros(duration_samples, dtype=float)
+    if duration_samples <= 0 or T == 0 or K == 0:
+        return np.zeros(max(duration_samples, 0), dtype=float)
 
-    win_len = hop_length * 2
-    win = np.hanning(win_len)
+    if win_length is None:
+        win_length = hop_length * 2
+    win_length = int(win_length)
+
+    y = np.zeros(duration_samples, dtype=float)
     wsum = np.zeros(duration_samples, dtype=float)
 
-    # Phase accumulator per harmonic (keeps continuity across frames)
+    win = np.hanning(win_length).astype(float)
+
+    # Phase accumulator per harmonic (continuous across frames)
     phase = np.zeros(K, dtype=float)
-    n = np.arange(win_len) / sample_rate
+
+    # Time axis for one synthesis frame (seconds)
+    n = np.arange(win_length, dtype=float) / float(sample_rate)
 
     for t in range(T):
-        if np.isnan(f0_hz[t]):
-            continue
-
         start = t * hop_length
-        end = start + win_len
         if start >= duration_samples:
             break
 
-        frame_len = win_len
+        end = start + win_length
+        frame_len = win_length
         if end > duration_samples:
             frame_len = duration_samples - start
             end = duration_samples
+
+        w = win[:frame_len]
+
+        # Always accumulate window weights (even if unvoiced)
+        wsum[start:end] += w
+
+        # If unvoiced, skip adding signal but keep smooth OLA shape
+        if t >= len(f0_hz) or np.isnan(f0_hz[t]):
+            continue
 
         base = float(f0_hz[t])
         frame = np.zeros(frame_len, dtype=float)
 
         for k in range(1, K + 1):
             A = float(harm_amps_t[k - 1, t])
+            if A == 0.0:
+                # Still advance phase for continuity
+                f = k * base
+                phase[k - 1] = (phase[k - 1] + 2.0 * np.pi * f * (hop_length / sample_rate)) % (2.0 * np.pi)
+                continue
+
             f = k * base
+            frame += A * np.cos(2.0 * np.pi * f * n[:frame_len] + phase[k - 1])
 
-            frame += A * np.cos(2 * np.pi * f * n[:frame_len] + phase[k - 1])
+            # Advance phase by hop (not frame_len) to keep consistent frame stepping
+            phase[k - 1] = (phase[k - 1] + 2.0 * np.pi * f * (hop_length / sample_rate)) % (2.0 * np.pi)
 
-            # Advance phase by hop length to preserve continuity between frames
-            phase[k - 1] = (phase[k - 1] + 2 * np.pi * f * (hop_length / sample_rate)) % (2 * np.pi)
-
-        w = win[:frame_len]
         y[start:end] += frame * w
-        wsum[start:end] += w
 
+    # OLA normalization
     y = y / (wsum + 1e-12)
+
+    # Final safety normalization
     y = synthesis.normalize(y)
     return y
+
 
 
 # -----------------------------
