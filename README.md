@@ -114,3 +114,9 @@ python -m InstruReconstr.gradio_app
 * `PATH_RESULTS`: generic analysis outputs.
 
 Override configuration by providing a custom Python config to `ConfigManager.get_instance(<path>)` if needed.
+
+## Demo for the project
+
+A demo of this project is available via a Google Colab notebook (see link below).
+
+https://colab.research.google.com/drive/1zPCxSBzfziV9gtR9KhxPuvO41wvbKc9Y?usp=sharing
